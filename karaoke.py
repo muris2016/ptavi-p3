@@ -5,6 +5,8 @@ from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 from smallsmilhandler import SmallSMILHandler
 import json
+import urllib.request
+
 
 
 def take_filename():
@@ -29,6 +31,15 @@ def do_json_file(list_labels):
     with open('labels.json', 'w') as outfile:
         json.dump(data, outfile)
 
+def get_url(list_labels):
+    for label in list_labels:
+        attributes = label[1]
+        for key in attributes:
+            if 'http://' in attributes[key]:
+                filename = attributes[key].split('/')[-1]
+                urllib.request.urlretrieve(attributes[key], filename)
+                attributes[key] = filename
+
 if __name__ == "__main__":
     filename = take_filename()
     parser = make_parser()
@@ -36,5 +47,6 @@ if __name__ == "__main__":
     parser.setContentHandler(cHandler)
     parser.parse(open(filename))
     list_labels = cHandler.get_tags()
-    show_smil(list_labels)
     do_json_file(list_labels)
+    get_url(list_labels)
+    show_smil(list_labels)
