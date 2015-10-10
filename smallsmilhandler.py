@@ -6,46 +6,22 @@ from xml.sax.handler import ContentHandler
 
 class SmallSMILHandler(ContentHandler):
     def __init__ (self):
-        self.labels = []
-        self.set_labels()
-        self.attributes = {'root-layout': self.root_layout,
-                           'region': self.region,
-                           'img': self.img,
-                           'audio': self.audio,
-                           'textstream': self.textstream}
+        self.list_labels = []
+        root_layout = {'width': '', 'height': '', 'background-color': ''}
+        region = {'id': '', 'top': '', 'bottom': '', 'left': '', 'right': ''}
+        img = {'src': '', 'region': '', 'begin': '', 'dur': ''}
+        audio = {'src': '', 'begin': '', 'dur': ''}
+        textstream = {'src': '', 'region': ''}
+        self.labels = {'root-layout': root_layout, 'region': region,'img': img,
+                       'audio': audio, 'textstream': textstream}
 
-    def set_labels(self):
-        self.root_layout = {'width': '', 'height': '', 'background-color': ''}
-        self.region = {'id': '', 'top': '', 'bottom': '', 'left': '', 'right': ''}
-        self.img = {'src': '', 'region': '', 'begin': '', 'dur': ''}
-        self.audio = {'src': '', 'begin': '', 'dur': ''}
-        self.textstream = {'src': '', 'region': ''}
 
     def startElement(self, name, attrs):
-        if name in self.attributes:
-            self.set_labels()
-            self.labels.append(name)
-            for key, value in self.attributes[name].items():
-                self.attributes[name][key] = attrs.get(key,'')
-            self.labels.append(self.attributes[name])
+        if name in self.labels:
+            my_dict = self.labels[name]
+            for key in my_dict.keys():
+                my_dict[key] = attrs.get(key, "")
+            self.list_labels.append([name, my_dict])
 
     def get_tags(self):
-        for i in self.labels:
-            try:
-                for key, value in i.items():
-                    print("   %s : %s" % (key, value))
-                print('')
-            except AttributeError:
-                print(i)
-
-    def endElement(self, name):
-        pass
-    def characters(self, char):
-        pass
-
-if __name__ == '__main__':
-    parser = make_parser()
-    cHandler = SmallSMILHandler()
-    parser.setContentHandler(cHandler)
-    parser.parse(open('karaoke.smil'))
-    cHandler.get_tags()
+        return self.list_labels
