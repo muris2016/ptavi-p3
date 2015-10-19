@@ -2,17 +2,9 @@
 # -*- coding: utf-8 -*-
 import sys
 from xml.sax import make_parser
-from xml.sax.handler import ContentHandler
 from smallsmilhandler import SmallSMILHandler
+from urllib.request import urlretrieve
 import json
-import urllib.request
-
-
-def take_filename():
-    if len(sys.argv) != 2:
-        sys.exit("Usage:  python3 karaoke.py file.smil")
-    else:
-        return sys.argv[1]
 
 
 class KaraokeLocal():
@@ -24,36 +16,36 @@ class KaraokeLocal():
         self.list_tags = cHandler.get_tags()
 
     def __str__(self):
-        str_tags = ''
+        string = ''
         for tag in self.list_tags:
-            str_tags += tag[0] # tag[0] is the tag name
-            for key, value in tag[1].items(): # tag[1] is the attributes dict
-                if value != '':
-                    str_tags += '\t%s="%s"' % (key, value)
-            if tag != self.list_tags[-1]:
-                str_tags += '\n'
-        return str_tags
+            string += tag[0]  # tag[0], tag[1] are the tag name & attrs ditc
+            string += ''.join('\t%s="%s"' % (key, value)
+                              for key, value in tag[1].items() if value != '')
+            string += '\n'
+        return string.strip('\n')  # removes last \n
 
     def to_json(self, smile_file, json_file=''):
-        if json_file == '':
-            json_file = smile_file.split('.')[0] + '.json'
-        data = json.dumps(self.list_tags)
+        if not json_file:
+            json_file = smile_file.replace('.smil', '.json')
         with open(json_file, 'w') as outfile:
-            json.dump(data, outfile)
+            json.dump(self.list_tags, outfile, sort_keys=True, indent=4)
 
     def do_local(self):
-        for tag in self.list_tags:
-            attributes = tag[1]
-            for key in attributes:
-                if 'src' in attributes and 'http://' in attributes[key]:
-                    filename = attributes[key].split('/')[-1]
-                    urllib.request.urlretrieve(attributes[key], filename)
-                    attributes[key] = filename
+        attrs_dict = [tag[1] for tag in self.list_tags]
+        for attrs in attrs_dict:
+            if 'src' in attrs and 'http://' in attrs['src']:
+                filename = attrs['src'].split('/')[-1]
+                urlretrieve(attrs['src'], filename)
+                attrs['src'] = filename
+
 
 if __name__ == "__main__":
-    filename = take_filename()
+    if len(sys.argv) != 2:
+        sys.exit("Usage:  python3 karaoke.py file.smil")
+    filename = sys.argv[1]
     cHandler = KaraokeLocal(filename)
-    print('\n' + cHandler.__str__() + '\n')
+    print(cHandler)
     cHandler.to_json(filename)
     cHandler.do_local()
-    print('\n' + cHandler.__str__() + '\n')
+    cHandler.to_json(filename, 'local.json')
+    print(cHandler)
